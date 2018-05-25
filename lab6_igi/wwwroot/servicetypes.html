@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список видов услуг</title>
+    <link href="lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Список видов услуг</h2>
+    <form name="serviceTypeForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group">
+            <label for="name">Название:</label>
+            <input class="form-control" name="name" />
+        </div>
+        <div class="form-group">
+            <label for="cost">Стоимость:</label>
+            <input class="form-control" name="cost" />
+        </div>
+        <div class="form-group">
+            <label for="description">Описание:</label>
+            <input class="form-control" name="description" />
+        </div>
+        <div class="panel-body">
+            <button type="submit" class="btn btn-sm btn-primary">Сохранить</button>
+            <a id="reset" class="btn btn-sm btn-primary">Сбросить</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped table-bordered">
+        <thead><tr><th>Id</th><th>Название</th><th>Стоимость</th><th>Описание</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table>
+
+    <script src="lib/jquery/dist/jquery.js"></script>
+    <script src="lib/bootstrap/dist/js/bootstrap.js"></script>
+    <script type="text/javascript" src="js/services.js"></script>
+
+    <script>
+        // Получение всех
+        function GetServiceTypes() {
+            $.ajax({
+                url: '/api/values/',
+                type: 'GET',
+                contentType: "application/json",
+                /*error: function (xhr, status, error) {
+                    alert(xhr.responseText + '|\n' + status + '|\n' + error);
+                },*/
+                success: function (servicetypes) {
+                    var rows = "";
+                    $.each(servicetypes, function (index, servicetype) {
+                        // добавляем полученные элементы в таблицу
+                        rows += row(servicetype);
+                    })
+                    $("table tbody").append(rows);
+                }
+            });
+        }
+
+        // Получение одного
+        function GetServiceType(id) {
+            $.ajax({
+                url: '/api/values/' + id,
+                type: 'GET',
+                contentType: "application/json",
+                success: function (servicetype) {
+                    var form = document.forms["serviceTypeForm"];
+                    form.elements["id"].value = servicetype.serviceTypeId;
+                    form.elements["name"].value = servicetype.name;
+                    form.elements["cost"].value = servicetype.cost;
+                    form.elements["description"].value = servicetype.description;
+                }
+            });
+        }
+
+        // Добавление
+        function CreateServiceType(servicetypeName, servicetypeDescription, servicetypeCost) {
+            $.ajax({
+                url: "api/values",
+                contentType: "application/json",
+                method: "POST",
+                data: JSON.stringify({
+                    name: servicetypeName,
+                    description: servicetypeDescription,
+                    cost: servicetypeCost
+                }),
+                success: function (servicetype) {
+                    reload();
+                    reset();
+                    $("table tbody").append(row(servicetype));
+                }
+            })
+        }
+
+        // Изменение
+        function EditServiceType(serviceTypeId, servicetypeName, servicetypeDescription, servicetypeCost) {
+            $.ajax({
+                url: "api/values",
+                contentType: "application/json",
+                method: "PUT",
+                data: JSON.stringify({
+                    serviceTypeId: serviceTypeId,
+                    name: servicetypeName,
+                    description: servicetypeDescription,
+                    cost: servicetypeCost
+                }),
+                success: function (servicetype) {
+                    reload();
+                    reset();
+                    $("tr[data-rowid='" + servicetype.id + "']").replaceWith(row(servicetype));
+                }
+            })
+        }
+
+        // сброс формы
+        function reset() {
+            var form = document.forms["serviceTypeForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+
+        // Удаление
+        function DeleteServiceType(id) {
+            $.ajax({
+                url: "api/values/" + id,
+                contentType: "application/json",
+                method: "DELETE",
+                success: function (servicetype) {
+                    $("tr[data-rowid='" + servicetype.id + "']").remove();
+                    reload();
+                }
+            })
+        }
+        // создание строки для таблицы
+        var row = function (servicetype) {
+            return "<tr data-rowid='" + servicetype.serviceTypeId + "'><td>" + servicetype.serviceTypeId + "</td>" +
+                "<td>" + servicetype.name + "</td> <td>" + servicetype.cost + "</td> " + "<td>" + servicetype.description + "</td>" +
+                "<td><a class='editLink' data-id='" + servicetype.serviceTypeId + "'>Изменить</a> | " +
+                "<a class='removeLink' data-id='" + servicetype.serviceTypeId + "'>Удалить</a></td></tr>";
+        }
+        // сброс значений формы
+        $("#reset").click(function (e) {
+
+            e.preventDefault();
+            reset();
+        })
+
+        // отправка формы
+        $("form").submit(function (e) {
+            e.preventDefault();
+            var id = this.elements["id"].value;
+            var name = this.elements["name"].value;
+            var description = this.elements["description"].value;
+            var cost = this.elements["cost"].value;
+            if (id == 0)
+                CreateServiceType(name, description, cost);
+            else
+                EditServiceType(id, name, description, cost);
+        });
+
+        // нажимаем на ссылку Изменить
+        $("body").on("click", ".editLink", function () {
+            var id = $(this).data("id");
+            GetServiceType(id);
+        })
+        // нажимаем на ссылку Удалить
+        $("body").on("click", ".removeLink", function () {
+            var id = $(this).data("id");
+            DeleteServiceType(id);
+        })
+
+        // загрузка пользователей
+        GetServiceTypes();
+
+        // перезагрузка страницы
+        function reload() {
+            location.reload();
+        }
+
+    </script>
+</body>
+</html>
