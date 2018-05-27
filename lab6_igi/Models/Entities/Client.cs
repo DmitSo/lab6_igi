@@ -21,8 +21,5 @@ namespace lab1_ef
         public virtual Room Room { get; set; }
 
         public ICollection<Service> Services { get; set; }
-
-        //public ICollection<Employee> ServeEmployees { get
-        //    { return Services?.Where(s => s.Client == this).Select(s => s.Employee).ToList(); } }
     }
 }
