@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using lab1_ef;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -24,14 +25,35 @@ namespace lab6_igi.Controllers
         [HttpGet]
         public IEnumerable<Client> Get()
         {
-            return db.Clients.ToList();
+            var t = db.Clients.Include(o => o.Room).Select(o => new Client
+            {
+                ClientId = o.ClientId,
+                Name = o.Name,
+                Passport = o.Passport,
+                DepartureDate = o.DepartureDate,
+                OccupancyDate = o.OccupancyDate,
+                RoomId = o.RoomId,
+                Room = new Room()
+                {
+                    Capacity = o.Room.Capacity,
+                    Cost = o.Room.Cost,
+                    CostDate = o.Room.CostDate,
+                    Description = o.Room.Description,
+                    RoomNo = o.Room.RoomNo,
+                    RoomId = o.Room.RoomId,
+                    RoomTypeId = o.Room.RoomTypeId
+                }
+            }).ToList();
+            return t;
         }
 
         // GET api/<controller>/5
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            Client client = db.Clients.FirstOrDefault(x => x.ClientId == id);
+            Client client = db.Clients.Include(o => o.Room).FirstOrDefault(x => x.ClientId == id);
+            client.Room.Clients = null;
+            client.Room.RoomType = null;
             if (client == null)
                 return NotFound();
             return new ObjectResult(client);

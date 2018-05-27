@@ -19,8 +19,8 @@
             <input class="form-control" name="passport" />
         </div>
         <div class="form-group">
-            <label for="passport">ID Комнаты:</label>
-            <input class="form-control" name="roomId" />
+            <label for="passport"># Комнаты:</label>
+            <select class="form-control" id="roomNo" name="roomNo"></select>
         </div>
         <div class="panel-body">
             <button type="submit" class="btn btn-sm btn-primary">Сохранить</button>
@@ -28,7 +28,7 @@
         </div>
     </form>
     <table class="table table-condensed table-striped table-bordered">
-        <thead><tr><th>Id</th><th>Имя</th><th>Паспорт</th><th>ID Комнаты</th><th></th></tr></thead>
+        <thead><tr><th>Id</th><th>Имя</th><th>Паспорт</th><th># Комнаты</th><th></th></tr></thead>
         <tbody></tbody>
     </table>
 
@@ -37,20 +37,24 @@
     <script type="text/javascript" src="js/services.js"></script>
 
     <script>
+        var allRooms = [];
+        var allR = [];
         // Получение всех
         function GetClients() {
             $.ajax({
                 url: '/api/values/',
                 type: 'GET',
                 contentType: "application/json",
-                /*error: function (xhr, status, error) {
-                    alert(xhr.responseText + '|\n' + status + '|\n' + error);
-                },*/
                 success: function (clients) {
                     var rows = "";
                     $.each(clients, function (index, client) {
                         // добавляем полученные элементы в таблицу
                         rows += row(client);
+                        if (allRooms.indexOf(client.room.roomNo) == -1) {
+                            $('#roomNo').append('<option value="' + client.roomid + '">' + client.room.roomNo + '</option>');
+                            allRooms.push(client.room.roomNo);
+                            allR.push(client.room);
+                        }
                     })
                     $("table tbody").append(rows);
                 }
@@ -67,7 +71,8 @@
                     form.elements["id"].value = client.clientId;
                     form.elements["name"].value = client.name;
                     form.elements["passport"].value = client.passport;
-                    form.elements["roomId"].value = client.roomId;
+                    var idAtList = allRooms.indexOf(client.room.roomNo);
+                    document.clientForm.roomNo.selectedIndex = idAtList; 
                 }
             });
         }
@@ -85,7 +90,7 @@
                 }),
                 success: function (client) {
                     reset();
-                    $("table tbody").append(row(client));
+                    reload();
                 }
             })
         }
@@ -104,7 +109,6 @@
                 }),
                 success: function (client) {
                     reset();
-                    $("tr[data-rowid='" + client.id + "']").replaceWith(row(client));
                     reload();
                 }
             })
@@ -115,9 +119,6 @@
             var form = document.forms["clientForm"];
             form.reset();
             form.elements["id"].value = 0;
-
-            //$("table tbody").remove("*");
-            //GetClients();
         }
 
         // Удаление
@@ -127,7 +128,6 @@
                 contentType: "application/json",
                 method: "DELETE",
                 success: function (client) {
-                    $("tr[data-rowid='" + client.id + "']").remove();
                     reload();
                 }
             })
@@ -135,13 +135,12 @@
         // создание строки для таблицы
         var row = function (client) {
             return "<tr data-rowid='" + client.clientId + "'><td>" + client.clientId + "</td>" +
-                "<td>" + client.name + "</td> <td>" + client.passport + "</td> "+"<td>" + client.roomId + "</td>" +                
+                "<td>" + client.name + "</td> <td>" + client.passport + "</td> " + "<td>" + client.room.roomNo + "</td>" +                
                 "<td><a class='editLink' data-id='" + client.clientId + "'>Изменить</a> | " +
                 "<a class='removeLink' data-id='" + client.clientId + "'>Удалить</a></td></tr>";
         }
         // сброс значений формы
         $("#reset").click(function (e) {
-
             e.preventDefault();
             reset();
         })
@@ -152,11 +151,15 @@
             var id = this.elements["id"].value;
             var name = this.elements["name"].value;
             var pass = this.elements["passport"].value;
-            var roomId = this.elements["roomId"].value;
-            if (id == 0)
-                CreateClient(name, pass, roomId);
-            else
-                EditClient(id, name, pass, roomId);
+            selected_object = $("#roomNo option:selected").text();
+            var roomIdInList = allRooms.indexOf(selected_object);
+            var roomId = allR[roomIdInList].roomId;
+            if (roomId != null) {
+                if (id == 0)
+                    CreateClient(name, pass, roomId);
+                else
+                    EditClient(id, name, pass, roomId);
+            }
         });
 
         // нажимаем на ссылку Изменить
